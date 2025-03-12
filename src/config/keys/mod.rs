@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
 
 mod actions;
 mod key;
+mod sequence;
 
 #[derive(Debug, PartialEq, Default, Clone)]
 pub struct KeyConfig {
