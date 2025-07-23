@@ -9,6 +9,7 @@ use serde_with::skip_serializing_none;
 use thiserror::Error;
 
 use super::{
+    SongFormatOrProps,
     StyleFile,
     parser::{self, make_error_report},
     properties::{
@@ -74,8 +75,7 @@ pub struct SongTableColumnFile {
     /// Property to display in the column
     /// Can be one of: Duration, Filename, Artist, AlbumArtist, Title, Album,
     /// Date, Genre or Comment
-    pub(super) prop: Option<PropertyFile<SongPropertyFile>>,
-    pub(super) format: Option<String>,
+    pub(super) prop: SongFormatOrProps<PropertyFile<SongPropertyFile>>,
     /// Label to display in the column header
     /// If not set, the property name will be used
     pub(super) label: Option<String>,
@@ -104,7 +104,7 @@ impl Default for QueueTableColumnsFile {
     fn default() -> Self {
         QueueTableColumnsFile(vec![
             SongTableColumnFile {
-                prop: Some(PropertyFile {
+                prop: SongFormatOrProps::Props(PropertyFile {
                     kind: PropertyKindFileOrText::Property(SongPropertyFile::Artist),
                     default: Some(Box::new(PropertyFile {
                         kind: PropertyKindFileOrText::Text("Unknown".to_string()),
@@ -113,14 +113,13 @@ impl Default for QueueTableColumnsFile {
                     })),
                     style: None,
                 }),
-                format: None,
                 label: None,
                 width_percent: None,
                 width: Some("20%".to_string()),
                 alignment: None,
             },
             SongTableColumnFile {
-                prop: Some(PropertyFile {
+                prop: SongFormatOrProps::Props(PropertyFile {
                     kind: PropertyKindFileOrText::Property(SongPropertyFile::Title),
                     default: Some(Box::new(PropertyFile {
                         kind: PropertyKindFileOrText::Text("Unknown".to_string()),
@@ -129,14 +128,13 @@ impl Default for QueueTableColumnsFile {
                     })),
                     style: None,
                 }),
-                format: None,
                 label: None,
                 width_percent: None,
                 width: Some("35%".to_string()),
                 alignment: None,
             },
             SongTableColumnFile {
-                prop: Some(PropertyFile {
+                prop: SongFormatOrProps::Props(PropertyFile {
                     kind: PropertyKindFileOrText::Property(SongPropertyFile::Album),
                     default: Some(Box::new(PropertyFile {
                         kind: PropertyKindFileOrText::Text("Unknown Album".to_string()),
@@ -153,14 +151,13 @@ impl Default for QueueTableColumnsFile {
                         modifiers: None,
                     }),
                 }),
-                format: None,
                 label: None,
                 width_percent: None,
                 width: Some("30%".to_string()),
                 alignment: None,
             },
             SongTableColumnFile {
-                prop: Some(PropertyFile {
+                prop: SongFormatOrProps::Props(PropertyFile {
                     kind: PropertyKindFileOrText::Property(SongPropertyFile::Duration),
                     default: Some(Box::new(PropertyFile {
                         kind: PropertyKindFileOrText::Text("-".to_string()),
@@ -169,7 +166,6 @@ impl Default for QueueTableColumnsFile {
                     })),
                     style: None,
                 }),
-                format: None,
                 label: None,
                 width_percent: None,
                 width: Some("15%".to_string()),
@@ -188,19 +184,18 @@ impl TryFrom<QueueTableColumnsFile> for QueueTableColumns {
                 .0
                 .into_iter()
                 .map(|v| -> Result<_, PaneConversionError> {
-                    let prop: Property<SongProperty> = match (v.format, v.prop) {
-                        (Some(format), Some(_)) | (Some(format), None) => parser::parser()
-                            .parse(&format)
+                    let prop: Property<_> = match v.prop {
+                        SongFormatOrProps::Format(s) => parser::parser()
+                            .parse(&s)
                             .into_result()
                             .map_err(|errs| {
-                                PaneConversionError::FormatError(make_error_report(errs, &format))
+                                PaneConversionError::FormatError(make_error_report(errs, &s))
                             })?
                             .into_iter()
                             .next()
                             .context("A song property must be specified")?
                             .try_into()?,
-                        (None, Some(prop)) => prop.try_into()?,
-                        (None, None) => return Err(PaneConversionError::MissingFormat),
+                        SongFormatOrProps::Props(p) => p.try_into()?,
                     };
                     let label = v.label.unwrap_or_else(|| match &prop.kind {
                         PropertyKindOrText::Text { .. } => String::new(),
