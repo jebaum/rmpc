@@ -34,11 +34,16 @@ directory.
 - Removed `Add`, `Insert`, `AddAndReplace`, `AddAll`, `InsertAll` and `AddAllReplace` from the code.
 They are now mapped to the new `AddOptions` action. Existing configs are not affected and will
 continue to work.
+- Scrolling behavior to be more natural - scrolling now actually scrolls the area instead of simply
+going to the next item
+- Scrollbars now represent the viewport position instead of the currently selected item position
 
 ### Fixed
 
 - Fixed `QueueTimeRemaining` not updating remaining time
 - `ModalClosed` event now correctly gets dispatched only after all modals were closed
+- Preview no longer disappears in search when returning to the search form while the results are
+scrolled down
 
 ## [0.9.0] - 2025-06-23
 
